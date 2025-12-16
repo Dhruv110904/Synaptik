@@ -1,0 +1,40 @@
+# =========================
+# ENVIRONMENT VARIABLES
+# =========================
+.env
+.env.local
+.env.development
+.env.production
+
+# =========================
+# NODE / BACKEND
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# =========================
+# REACT / FRONTEND
+# =========================
+build/
+dist/
+.vite/
+
+# =========================
+# DATABASE / UPLOADS
+# =========================
+uploads/
+*.log
+
+# =========================
+# OS FILES
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE / EDITOR
+# =========================
+.vscode/
+.idea/
