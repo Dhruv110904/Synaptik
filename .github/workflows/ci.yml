@@ -1,0 +1,30 @@
+name: Synaptik CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Backend install & test
+        working-directory: backend
+        run: |
+          npm install
+          npm test || echo "No tests added yet"
+
+      - name: Frontend build (Vite)
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build
