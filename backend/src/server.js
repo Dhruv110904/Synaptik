@@ -6,6 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const client = require("prom-client");
 
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
@@ -46,3 +47,13 @@ const PORT = process.env.PORT || 5000;
 connectDB(process.env.MONGO_URI)
   .then(() => server.listen(PORT, () => console.log(`Backend + sockets listening on ${PORT}`)))
   .catch(err => { console.error('DB connect failed', err); process.exit(1); });
+
+
+  // collect default system metrics (CPU, memory, event loop)
+client.collectDefaultMetrics();
+
+// metrics endpoint
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
+});
