@@ -36,17 +36,17 @@ const Footer = () => {
 
           {/* SOCIAL ICONS */}
           <div className="flex items-center gap-4">
-            <a
-              href="#"
+            <a target="_blank"
+              href="https://x.com/DhruvJain1109"
               className="w-11 h-11 rounded-xl bg-white border border-teal-100
                          flex items-center justify-center
-                         hover:bg-teal-50 hover:scale-110 transition"
+                         hover:bg-teal-50 hover:scale-110 transition target:_blank"
             >
               <Twitter className="w-5 h-5 text-teal-600" />
             </a>
 
-            <a
-              href="#"
+            <a target="_blank"
+              href="https://github.com/Dhruv110904/Synaptik"
               className="w-11 h-11 rounded-xl bg-white border border-teal-100
                          flex items-center justify-center
                          hover:bg-teal-50 hover:scale-110 transition"
