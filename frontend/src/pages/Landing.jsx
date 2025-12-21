@@ -6,12 +6,12 @@ import Footer from "../components/Footer";
 
 export default function Landing() {
   return (
-    <div className="relative w-full min-h-screen bg-white text-gray-900 overflow-x-hidden">
+    // FIX APPLIED BELOW: added `dark:bg-slate-950` and `dark:text-gray-100`
+    <div className="relative w-full min-h-screen bg-white dark:bg-slate-950 text-gray-900 dark:text-gray-100 overflow-x-hidden transition-colors duration-300">
 
       <Navbar />
 
-      {/* Page Content */}
-      <main className="pt-24">
+      <main className="pt-16">
         <HeroSection />
         <FeaturesSection />
         <CTASection />

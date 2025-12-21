@@ -95,23 +95,35 @@ export default function FeaturesSection() {
   return (
     <section
       id="features"
-      className="py-32 bg-linear-to-b from-teal-50 via-white to-white"
+      className="py-32 transition-colors duration-500 relative overflow-hidden
+        bg-linear-to-br from-white via-teal-50 to-white
+        dark:bg-linear-to-br dark:from-gray-950 dark:via-[#051e24] dark:to-gray-950"
     >
-      <div className="max-w-7xl mx-auto px-6">
+      
+      {/* Background Ambience (Aligned with Hero) */}
+      <div className="absolute inset-0 opacity-40 dark:opacity-30 pointer-events-none">
+        <div className="absolute top-0 right-0 w-150 h-150 bg-teal-200/30 dark:bg-teal-500/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-0 left-0 w-150 h-150 bg-teal-300/20 dark:bg-teal-400/10 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
 
         {/* Heading */}
         <div className="text-center max-w-3xl mx-auto mb-20">
           <h2
             data-animate
-            className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4"
+            className="text-4xl md:text-5xl font-extrabold mb-6 transition-colors tracking-tight
+              text-gray-900 dark:text-white"
           >
-            Powerful Features for Modern Communication
+            Powerful Features for <br className="hidden md:block"/>
+            <span className="text-teal-600 dark:text-teal-400">Modern Communication</span>
           </h2>
 
           <p
             data-animate
-            className="text-lg text-gray-600 leading-relaxed"
-            style={{ animationDelay: "120ms" }}
+            className="text-lg md:text-xl leading-relaxed transition-colors
+              text-gray-600 dark:text-gray-400"
+            style={{ animationDelay: "100ms" }}
           >
             Synaptik gives you all the tools you need to connect, collaborate,
             and build communities effortlessly.
@@ -124,19 +136,29 @@ export default function FeaturesSection() {
             <div
               key={i}
               data-animate
-              style={{ animationDelay: `${i * 80}ms` }}
-              className="bg-white border border-teal-100 rounded-2xl p-7 shadow-sm
-                         hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+              style={{ animationDelay: `${i * 50}ms` }}
+              className="group rounded-3xl p-8 transition-all duration-300
+                bg-white border border-teal-100 shadow-sm
+                hover:shadow-xl hover:-translate-y-1 hover:border-teal-200
+                
+                dark:bg-gray-900/60 dark:backdrop-blur-md dark:border-gray-800 
+                dark:hover:bg-gray-800 dark:hover:border-teal-500/30 dark:hover:shadow-teal-900/20"
             >
-              <div className={`w-14 h-14 rounded-xl bg-linear-to-r ${f.color} flex items-center justify-center mb-5`}>
-                <f.icon className="w-7 h-7 text-white" />
+              <div 
+                className={`w-14 h-14 rounded-2xl bg-linear-to-br ${f.color} 
+                flex items-center justify-center mb-6 shadow-lg shadow-teal-500/10
+                group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300`}
+              >
+                <f.icon className="w-7 h-7 text-white drop-shadow-md" />
               </div>
 
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-xl font-bold mb-3 transition-colors
+                text-gray-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400">
                 {f.title}
               </h3>
 
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-[15px] leading-relaxed transition-colors
+                text-gray-600 dark:text-gray-400">
                 {f.description}
               </p>
             </div>

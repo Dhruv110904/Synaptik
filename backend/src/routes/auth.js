@@ -1,56 +1,175 @@
-// backend/src/routes/auth.js
-const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const authMiddleware = require('../middleware/auth');
+const express = require("express");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const authMiddleware = require("../middleware/auth");
+const EmailOTP = require("../models/EmailOTP");
+const sendEmail = require("../utils/sendEmail");
 
 const router = express.Router();
 
-router.post('/register', async (req, res) => {
-  try {
-    const { username, email, password, displayName } = req.body;
-    if (!username || !email || !password) return res.status(400).json({ message: 'Missing fields' });
+/* ================================
+   REQUEST OTP
+================================ */
+router.post("/register/request-otp", async (req, res) => {
+  const { name, username, email, password } = req.body;
 
-    const exists = await User.findOne({ $or: [{ username }, { email }] });
-    if (exists) return res.status(400).json({ message: 'Username or email already taken' });
-
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-
-    const user = await User.create({ username, email, passwordHash, displayName });
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
-
-    res.json({ user: { id: user._id, username: user.username, displayName: user.displayName, avatarUrl: user.avatarUrl }, token });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+  if (!name || !username || !email || !password) {
+    return res.status(400).json({ message: "All fields required" });
   }
+
+  const exists = await User.findOne({
+    $or: [{ email }, { username }],
+  });
+  if (exists) {
+    return res.status(400).json({ message: "User already exists" });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Remove old OTPs
+  await EmailOTP.deleteMany({ email });
+
+  await EmailOTP.create({
+    email,
+    otp,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min
+  });
+
+  await sendEmail({
+    to: email,
+    subject: "Your Synaptik OTP",
+    html: `
+      <h2>Verify your email</h2>
+      <p>Your OTP is:</p>
+      <h1>${otp}</h1>
+      <p>Valid for 10 minutes</p>
+    `,
+  });
+
+  res.json({ message: "OTP sent to email" });
 });
 
-router.post('/login', async (req, res) => {
-  try {
-    const { emailOrUsername, password } = req.body;
-    if (!emailOrUsername || !password) return res.status(400).json({ message: 'Missing fields' });
+/* ================================
+   RESEND OTP
+================================ */
+router.post("/register/resend-otp", async (req, res) => {
+  const { email } = req.body;
 
-    const user = await User.findOne({ $or: [{ email: emailOrUsername }, { username: emailOrUsername }] });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
-
-    const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) return res.status(400).json({ message: 'Invalid credentials' });
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
-    res.json({ user: { id: user._id, username: user.username, displayName: user.displayName, avatarUrl: user.avatarUrl }, token });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+  if (!email) {
+    return res.status(400).json({ message: "Email required" });
   }
+
+  const record = await EmailOTP.findOne({ email });
+  if (!record) {
+    return res.status(400).json({ message: "OTP session not found. Register again." });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  record.otp = otp;
+  record.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await record.save();
+
+  await sendEmail({
+    to: email,
+    subject: "Your new Synaptik OTP",
+    html: `
+      <h2>New OTP</h2>
+      <h1>${otp}</h1>
+      <p>Valid for 10 minutes</p>
+    `,
+  });
+
+  res.json({ message: "OTP resent successfully" });
 });
 
-router.get('/me', authMiddleware, async (req, res) => {
-  const u = req.user.toObject();
-  res.json({ user: u });
+/* ================================
+   VERIFY OTP & CREATE USER
+================================ */
+router.post("/register/verify-otp", async (req, res) => {
+  const { name, username, email, password, otp } = req.body;
+
+  if (!name || !username || !email || !password || !otp) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
+
+  const record = await EmailOTP.findOne({ email, otp });
+  if (!record || record.expiresAt < new Date()) {
+    return res.status(400).json({ message: "Invalid or expired OTP" });
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  const user = await User.create({
+    name,
+    username,
+    email,
+    passwordHash,
+  });
+
+  await EmailOTP.deleteMany({ email });
+
+  const token = jwt.sign(
+    { id: user._id },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.json({
+    token,
+    user: {
+      id: user._id,
+      username: user.username,
+      name: user.name,
+    },
+  });
+});
+
+/* ================================
+   LOGIN
+================================ */
+router.post("/login", async (req, res) => {
+  const { emailOrUsername, password } = req.body;
+
+  if (!emailOrUsername || !password) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
+
+  const user = await User.findOne({
+    $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
+  });
+
+  if (!user) {
+    return res.status(400).json({ message: "Invalid credentials" });
+  }
+
+  const match = await bcrypt.compare(password, user.passwordHash);
+  if (!match) {
+    return res.status(400).json({ message: "Invalid credentials" });
+  }
+
+  const token = jwt.sign(
+    { id: user._id },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.json({
+    token,
+    user: {
+      id: user._id,
+      username: user.username,
+      name: user.name,
+    },
+  });
+});
+
+/* ================================
+   ME
+================================ */
+router.get("/me", authMiddleware, (req, res) => {
+  res.json({ user: req.user });
 });
 
 module.exports = router;
