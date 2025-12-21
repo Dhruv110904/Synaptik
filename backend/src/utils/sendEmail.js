@@ -1,27 +1,28 @@
-// backend/src/utils/sendEmail.js
-const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // MUST be false
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// Set the API Key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 module.exports = async ({ to, subject, html }) => {
+  const msg = {
+    to,
+    from: `"Synaptik" <${process.env.EMAIL_USER}>`, // Must match your Verified Sender in SendGrid
+    subject,
+    html,
+    // Optional: Add a text version for clients that don't view HTML
+    // text: html.replace(/<[^>]*>?/gm, ''), 
+  };
+
   try {
-    await transporter.sendMail({
-      from: `"Synaptik" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-    });
+    await sgMail.send(msg);
     console.log("✅ Email sent to", to);
-  } catch (err) {
-    console.error("❌ Email error:", err);
-    throw err;
+  } catch (error) {
+    console.error("❌ Email error:", error);
+
+    // SendGrid errors often contain more details in the response body
+    if (error.response) {
+      console.error("SendGrid Error Body:", error.response.body);
+    }
+    throw error;
   }
 };
