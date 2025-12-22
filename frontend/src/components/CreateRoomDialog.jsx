@@ -42,67 +42,140 @@ export default function CreateRoomDialog({ open, onClose, onCreate }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      {/* Card Container */}
+      <div className="w-full max-w-[500px] p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 transition-colors
+        bg-white rounded-[2rem] 
+        dark:bg-gray-900 dark:border dark:border-gray-800">
+        
+        {/* CLOSE BUTTON */}
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 transition-colors
+            text-gray-400 hover:text-gray-600 
+            dark:text-gray-500 dark:hover:text-gray-300"
+        >
+          <X size={20} />
+        </button>
 
         {/* HEADER */}
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Create Room</h2>
-          <button onClick={onClose}>
-            <X />
-          </button>
+        <div className="mb-8 pr-8">
+          <h2 className="text-2xl font-bold mb-1 transition-colors
+            text-gray-900 dark:text-white">
+            Create a New Room
+          </h2>
+          <p className="text-[15px] transition-colors
+            text-gray-500 dark:text-gray-400">
+            Create a space for your community to chat and collaborate.
+          </p>
         </div>
 
         {error && (
-          <p className="text-red-500 text-sm mb-3">{error}</p>
+          <div className="mb-4 p-3 rounded-lg text-sm border transition-colors
+            bg-red-50 text-red-600 border-red-100
+            dark:bg-red-900/20 dark:text-red-300 dark:border-red-800">
+            {error}
+          </div>
         )}
 
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-6">
 
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Room name"
-            className="w-full p-3 rounded-xl border"
-          />
+          {/* ROOM NAME INPUT */}
+          <div>
+            <label className="block text-sm font-semibold mb-2 transition-colors
+              text-gray-900 dark:text-gray-200">
+              Room Name
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., General Discussion"
+              className="w-full px-4 py-3 rounded-xl border-2 outline-none transition-colors text-[15px]
+                border-teal-400 text-gray-800 placeholder-gray-400 focus:border-teal-500
+                dark:bg-gray-800 dark:border-teal-500 dark:text-white dark:placeholder-gray-500 dark:focus:border-teal-400"
+            />
+          </div>
 
+          {/* CATEGORY INPUT (Hidden) */}
           <input
+            type="hidden"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            placeholder="Category (optional)"
-            className="w-full p-3 rounded-xl border"
           />
 
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description (optional)"
-            className="w-full p-3 rounded-xl border resize-none"
-            rows={3}
-          />
-
-          <label className="flex items-center gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={isPrivate}
-              onChange={(e) => setIsPrivate(e.target.checked)}
+          {/* DESCRIPTION INPUT */}
+          <div>
+            <label className="block text-sm font-semibold mb-2 transition-colors
+              text-gray-900 dark:text-gray-200">
+              Description (optional)
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What's this room about?"
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border transition-all resize-none text-[15px] outline-none
+                bg-gray-50 border-transparent text-gray-800 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-teal-100
+                dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:bg-gray-800 dark:focus:ring-teal-900/30 dark:border-gray-700"
             />
-            Private room (invite only)
-          </label>
+          </div>
 
-          <button
-            disabled={loading}
-            className="w-full py-3 rounded-xl bg-teal-600 text-white font-semibold"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <Loader2 className="animate-spin" size={18} />
-                Creating...
-              </span>
-            ) : (
-              "Create Room"
-            )}
-          </button>
+          {/* PRIVATE ROOM TOGGLE */}
+          <div className="flex items-center justify-between pt-1">
+            <div>
+              <label className="block text-sm font-semibold transition-colors
+                text-gray-900 dark:text-gray-200">
+                Private Room
+              </label>
+              <p className="text-sm mt-0.5 transition-colors
+                text-gray-500 dark:text-gray-400">
+                Only invited members can join
+              </p>
+            </div>
+            
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer" 
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+              />
+              <div className="w-12 h-7 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all duration-300
+                bg-gray-200 after:border-gray-300 peer-checked:bg-teal-400 peer-checked:after:border-white
+                dark:bg-gray-700 dark:after:border-gray-600 dark:peer-checked:bg-teal-500"></div>
+            </label>
+          </div>
+
+          {/* FOOTER BUTTONS */}
+          <div className="flex justify-end gap-3 pt-6 mt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 rounded-xl border font-semibold text-sm transition-colors
+                border-gray-200 text-gray-700 hover:bg-gray-50
+                dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              Cancel
+            </button>
+            
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2.5 rounded-xl font-bold text-sm text-white shadow-lg transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed
+                bg-teal-400 hover:bg-teal-500 shadow-teal-200
+                dark:bg-teal-500 dark:hover:bg-teal-600 dark:shadow-none"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="animate-spin" size={16} />
+                  Creating...
+                </span>
+              ) : (
+                "Create Room"
+              )}
+            </button>
+          </div>
+
         </form>
       </div>
     </div>

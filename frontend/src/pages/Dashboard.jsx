@@ -34,10 +34,7 @@ export default function Dashboard() {
   const handleCreateRoom = async (roomData) => {
     try {
       const { data } = await API.post("/api/rooms", roomData);
-
-      // Add new room instantly to sidebar
       setRooms((prev) => [data, ...prev]);
-
       return data;
     } catch (err) {
       console.error("Create room failed", err);
@@ -57,9 +54,8 @@ export default function Dashboard() {
   }, []);
 
   return (
-    // Main Container - Soft Gradient Background + Dark Mode Support
     <div className="h-screen flex overflow-hidden font-sans transition-colors duration-500
-      bg-linear-to-br from-teal-50 via-white to-teal-100 
+      bg-gradient-to-br from-teal-50 via-white to-teal-100 
       dark:from-gray-950 dark:via-[#051e24] dark:to-gray-950">
 
       {/* SIDEBAR */}
@@ -92,7 +88,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* PILL TABS - Rooms / DMs */}
+        {/* TABS */}
         <div className="flex p-1.5 rounded-xl mb-4 transition-colors
           bg-gray-100 dark:bg-gray-800">
           <button
@@ -165,7 +161,7 @@ export default function Dashboard() {
                 className="flex items-center gap-3 p-3 rounded-xl transition-colors group
                   hover:bg-gray-50 dark:hover:bg-gray-800"
               >
-                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-teal-400 to-teal-500 text-white flex items-center justify-center font-bold shadow-sm group-hover:shadow-md transition-all">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-teal-500 text-white flex items-center justify-center font-bold shadow-sm group-hover:shadow-md transition-all">
                   {room.name[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -191,7 +187,12 @@ export default function Dashboard() {
 
           {activeTab === "dms" && (
             dms.length ? dms.map(dm => {
-              const otherUser = dm.participants.find(p => p._id !== user._id);
+              // --- FIX IS HERE: Robust check for current user ID ---
+              const currentUserId = user.id || user._id;
+              const otherUser = dm.participants.find(p => p._id !== currentUserId) || dm.participants[0]; 
+              
+              if (!otherUser) return null;
+
               return (
                 <Link
                   key={dm._id}
@@ -203,7 +204,7 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors
                       bg-gray-200 text-gray-600 group-hover:bg-gray-300 
                       dark:bg-gray-700 dark:text-gray-300 dark:group-hover:bg-gray-600">
-                      {otherUser.username[0].toUpperCase()}
+                      {otherUser.username?.[0]?.toUpperCase()}
                     </div>
                     {otherUser.online && (
                       <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full shadow-sm border-2
@@ -260,11 +261,9 @@ export default function Dashboard() {
             path="/"
             element={
               <div className="h-full flex items-center justify-center p-6">
-                {/* Empty State Card */}
-                <div className="rounded-4xl p-12 md:p-16 text-center shadow-xl max-w-lg w-full transform transition-all hover:scale-[1.01] border
+                <div className="rounded-[2rem] p-12 md:p-16 text-center shadow-xl max-w-lg w-full transform transition-all hover:scale-[1.01] border
                   bg-white shadow-teal-900/5 border-transparent
                   dark:bg-gray-900/80 dark:backdrop-blur-md dark:shadow-teal-900/20 dark:border-gray-800">
-                  
                   <div className="w-20 h-20 mx-auto mb-8 rounded-3xl bg-teal-500 flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
                     <MessageCircle size={40} fill="currentColor" className="text-white" />
                   </div>
@@ -275,7 +274,7 @@ export default function Dashboard() {
                   <p className="text-lg leading-relaxed transition-colors
                     text-gray-500 dark:text-gray-400">
                     Choose a room from the sidebar or start a new
-                    direct message to begin chatting with your community.
+                    direct message to begin chatting.
                   </p>
                 </div>
               </div>
