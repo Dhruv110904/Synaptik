@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, Routes, Route } from "react-router-dom";
 import CreateRoomDialog from "../components/CreateRoomDialog";
 import NewDMDialog from "../components/NewDMDialog";
+import EditProfileDialog from "../components/EditProfileDialog";
 
 import {
   Plus,
@@ -17,19 +18,25 @@ import { useAuth } from "../contexts/AuthContext";
 import API from "../api/api";
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, login } = useAuth(); // Added login for profile update
   const [rooms, setRooms] = useState([]);
+  
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Dialog States
   const [openCreate, setOpenCreate] = useState(false);
+  const [openNewDM, setOpenNewDM] = useState(false);
+  const [openProfile, setOpenProfile] = useState(false);
+
   const [activeTab, setActiveTab] = useState("rooms");
   const [dms, setDms] = useState([]);
-  const [openNewDM, setOpenNewDM] = useState(false);
 
   useEffect(() => {
     if (activeTab === "dms") {
       API.get("/api/dms").then(res => setDms(res.data));
     }
   }, [activeTab]);
-
 
   const handleCreateRoom = async (roomData) => {
     try {
@@ -42,6 +49,19 @@ export default function Dashboard() {
     }
   };
 
+  // Handle Profile Update
+  const handleUpdateProfile = async (updatedData) => {
+    try {
+      const { data: updatedUser } = await API.put("/api/users/profile", updatedData);
+      // Update local context instantly
+      const token = localStorage.getItem("token"); 
+      login({ token, user: updatedUser });
+      return true;
+    } catch (err) {
+      console.error("Failed to update profile", err);
+      return false;
+    }
+  };
 
   useEffect(() => {
     API.get("/api/rooms")
@@ -53,9 +73,26 @@ export default function Dashboard() {
       .catch(() => setRooms([]));
   }, []);
 
+  // --- FILTER LOGIC ---
+  const filteredRooms = rooms.filter(room => 
+    room.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredDms = dms.filter(dm => {
+    const currentUserId = user.id || user._id;
+    const otherUser = dm.participants?.find(p => p._id !== currentUserId) || dm.participants?.[0];
+    return otherUser?.username?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  // Handle Tab Switch (Clear search on switch)
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+    setSearchQuery("");
+  };
+
   return (
     <div className="h-screen flex overflow-hidden font-sans transition-colors duration-500
-      bg-gradient-to-br from-teal-50 via-white to-teal-100 
+      bg-linear-to-br from-teal-50 via-white to-teal-100 
       dark:from-gray-950 dark:via-[#051e24] dark:to-gray-950">
 
       {/* SIDEBAR */}
@@ -92,7 +129,7 @@ export default function Dashboard() {
         <div className="flex p-1.5 rounded-xl mb-4 transition-colors
           bg-gray-100 dark:bg-gray-800">
           <button
-            onClick={() => setActiveTab("rooms")}
+            onClick={() => switchTab("rooms")}
             className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
               activeTab === "rooms"
                 ? "bg-white text-teal-600 shadow-sm dark:bg-gray-700 dark:text-teal-400"
@@ -102,7 +139,7 @@ export default function Dashboard() {
             Rooms
           </button>
           <button
-            onClick={() => setActiveTab("dms")}
+            onClick={() => switchTab("dms")}
             className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
               activeTab === "dms"
                 ? "bg-white text-teal-600 shadow-sm dark:bg-gray-700 dark:text-teal-400"
@@ -113,11 +150,13 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* SEARCH BAR */}
+        {/* SEARCH BAR (Functional) */}
         <div className="relative mb-4">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 
             text-gray-400 dark:text-gray-500" />
           <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={activeTab === "rooms" ? "Search rooms..." : "Search messages..."}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all border
               bg-white border-gray-200 focus:border-teal-500 placeholder:text-gray-400 text-gray-900
@@ -151,17 +190,19 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* LIST AREA */}
+        {/* LIST AREA (Using Filtered Lists) */}
         <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+          
+          {/* ROOMS LIST */}
           {activeTab === "rooms" && (
-            rooms.length ? rooms.map(room => (
+            filteredRooms.length ? filteredRooms.map(room => (
               <Link
                 key={room._id}
                 to={`/app/rooms/${room._id}`}
                 className="flex items-center gap-3 p-3 rounded-xl transition-colors group
                   hover:bg-gray-50 dark:hover:bg-gray-800"
               >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-teal-500 text-white flex items-center justify-center font-bold shadow-sm group-hover:shadow-md transition-all">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-teal-400 to-teal-500 text-white flex items-center justify-center font-bold shadow-sm group-hover:shadow-md transition-all">
                   {room.name[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -180,16 +221,16 @@ export default function Dashboard() {
               <div className="flex flex-col items-center justify-center h-40 text-sm
                 text-gray-400 dark:text-gray-600">
                 <MessageCircle size={32} className="mb-2 opacity-20" />
-                <p>No rooms found</p>
+                <p>{searchQuery ? "No matching rooms" : "No rooms found"}</p>
               </div>
             )
           )}
 
+          {/* DMs LIST */}
           {activeTab === "dms" && (
-            dms.length ? dms.map(dm => {
-              // --- FIX IS HERE: Robust check for current user ID ---
+            filteredDms.length ? filteredDms.map(dm => {
               const currentUserId = user.id || user._id;
-              const otherUser = dm.participants.find(p => p._id !== currentUserId) || dm.participants[0]; 
+              const otherUser = dm.participants?.find(p => p._id !== currentUserId) || dm.participants?.[0]; 
               
               if (!otherUser) return null;
 
@@ -228,7 +269,7 @@ export default function Dashboard() {
               <div className="flex flex-col items-center justify-center h-40 text-sm
                 text-gray-400 dark:text-gray-600">
                 <User size={32} className="mb-2 opacity-20" />
-                <p>No messages yet</p>
+                <p>{searchQuery ? "No matching users" : "No messages yet"}</p>
               </div>
             )
           )}
@@ -237,11 +278,17 @@ export default function Dashboard() {
         {/* SIDEBAR FOOTER */}
         <div className="pt-4 mt-2 border-t flex justify-between items-center px-2 transition-colors
           border-gray-100 dark:border-gray-800">
-          <button className="p-2.5 rounded-xl transition-all
+          
+          {/* Settings opens profile */}
+          <button 
+            onClick={() => setOpenProfile(true)}
+            className="p-2.5 rounded-xl transition-all
             text-gray-400 hover:bg-gray-50 hover:text-gray-600 
-            dark:hover:bg-gray-800 dark:hover:text-gray-300">
+            dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          >
             <Settings size={20} />
           </button>
+
           <button
             onClick={logout}
             className="flex items-center gap-2 px-3 py-2 rounded-xl font-medium text-sm transition-all
@@ -274,7 +321,7 @@ export default function Dashboard() {
                   <p className="text-lg leading-relaxed transition-colors
                     text-gray-500 dark:text-gray-400">
                     Choose a room from the sidebar or start a new
-                    direct message to begin chatting.
+                    direct message to begin chatting with your community.
                   </p>
                 </div>
               </div>
@@ -294,6 +341,12 @@ export default function Dashboard() {
       <NewDMDialog
         open={openNewDM}
         onClose={() => setOpenNewDM(false)}
+      />
+      <EditProfileDialog 
+        open={openProfile}
+        onClose={() => setOpenProfile(false)}
+        user={user}
+        onUpdate={handleUpdateProfile}
       />
 
     </div>

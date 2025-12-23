@@ -1,4 +1,3 @@
-// backend/src/models/DMConversation.js
 const mongoose = require('mongoose');
 
 const DMConversationSchema = new mongoose.Schema({

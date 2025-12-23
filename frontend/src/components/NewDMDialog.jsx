@@ -42,8 +42,8 @@ export default function NewDMDialog({ open, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       {/* Card Container */}
-      <div className="w-full max-w-[500px] p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 transition-colors
-        bg-white rounded-[2rem] 
+      <div className="w-full max-w-125 p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 transition-colors
+        bg-white rounded-4xl
         dark:bg-gray-900 dark:border dark:border-gray-800">
 
         {/* CLOSE BUTTON */}

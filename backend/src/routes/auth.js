@@ -8,9 +8,9 @@ const sendEmail = require("../utils/sendEmail");
 
 const router = express.Router();
 
-/* ================================
-   REQUEST OTP
-================================ */
+
+
+
 router.post("/register/request-otp", async (req, res) => {
   const { name, username, email, password } = req.body;
 
@@ -27,7 +27,7 @@ router.post("/register/request-otp", async (req, res) => {
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // Remove old OTPs
+
   await EmailOTP.deleteMany({ email });
 
   await EmailOTP.create({
@@ -50,9 +50,7 @@ router.post("/register/request-otp", async (req, res) => {
   res.json({ message: "OTP sent to email" });
 });
 
-/* ================================
-   RESEND OTP
-================================ */
+
 router.post("/register/resend-otp", async (req, res) => {
   const { email } = req.body;
 
@@ -84,9 +82,8 @@ router.post("/register/resend-otp", async (req, res) => {
   res.json({ message: "OTP resent successfully" });
 });
 
-/* ================================
-   VERIFY OTP & CREATE USER
-================================ */
+
+
 router.post("/register/verify-otp", async (req, res) => {
   const { name, username, email, password, otp } = req.body;
 
@@ -126,9 +123,8 @@ router.post("/register/verify-otp", async (req, res) => {
   });
 });
 
-/* ================================
-   LOGIN
-================================ */
+
+
 router.post("/login", async (req, res) => {
   const { emailOrUsername, password } = req.body;
 
@@ -165,9 +161,8 @@ router.post("/login", async (req, res) => {
   });
 });
 
-/* ================================
-   ME
-================================ */
+
+
 router.get("/me", authMiddleware, (req, res) => {
   res.json({ user: req.user });
 });
