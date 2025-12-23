@@ -1,31 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MessageCircle, Menu, X, Sun, Moon } from "lucide-react";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function Navbar() {
   const [isMobile, setIsMobile] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
-  // Initialize state based on what is actually in localStorage or system pref
-  const [dark, setDark] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("theme");
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      return saved === "dark" || (!saved && prefersDark);
-    }
-    return false;
-  });
-
-  // Apply the class to HTML whenever 'dark' state changes
-  useEffect(() => {
-    if (dark) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [dark]);
+  const { dark, toggleTheme } = useTheme();
 
   // Scroll Effect
   useEffect(() => {
@@ -66,7 +48,7 @@ export default function Navbar() {
         {/* ACTION BUTTONS */}
         <div className="hidden md:flex items-center gap-4">
           <button
-            onClick={() => setDark(!dark)}
+            onClick={toggleTheme}
             className="p-2 rounded-xl bg-white/60 dark:bg-white/10 hover:bg-white/80 dark:hover:bg-white/20 transition"
           >
             {/* If dark mode is ON, show SUN (to switch to light) */}

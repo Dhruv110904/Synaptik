@@ -106,7 +106,7 @@ export default function Dashboard() {
           dark:bg-teal-900/10 dark:border-teal-500/10">
           
           <div className="relative">
-            <div className="w-12 h-12 rounded-full bg-teal-500 text-white flex items-center justify-center text-lg font-bold shadow-md shadow-teal-200 dark:shadow-teal-900/20">
+            <div onClick={() => setOpenProfile(true)} className="w-12 h-12 rounded-full bg-teal-500 text-white flex items-center justify-center text-lg font-bold shadow-md shadow-teal-200 dark:shadow-teal-900/20">
               {user?.username?.[0]?.toUpperCase()}
             </div>
             <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 border-[2.5px] rounded-full

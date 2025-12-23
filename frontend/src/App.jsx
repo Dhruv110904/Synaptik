@@ -9,6 +9,8 @@ import Privacy from './pages/Privacy';
 import Dashboard from './pages/Dashboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { Theme } from 'emoji-picker-react';
 
 function Protected({ children }) {
   const { user } = useAuth();
@@ -18,6 +20,7 @@ function Protected({ children }) {
 
 export default function App(){
   return (
+    <ThemeProvider>
     <AuthProvider>
       <SocketProvider>
         <Routes>
@@ -31,5 +34,6 @@ export default function App(){
         </Routes>
       </SocketProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
