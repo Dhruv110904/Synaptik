@@ -14,14 +14,15 @@ import {
   XCircle, 
   Users, 
   X,
-  AlertTriangle // Added for the confirmation modal
+  AlertTriangle 
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react"; 
 import { useSocket } from "../contexts/SocketContext";
 import { useAuth } from "../contexts/AuthContext";
 import API from "../api/api";
 
-export default function RoomView() {
+// Accept background prop here
+export default function RoomView({ background }) {
   const { roomId } = useParams();
   const { socket } = useSocket();
   const { user } = useAuth();
@@ -40,11 +41,10 @@ export default function RoomView() {
     title: "", 
     message: "", 
     action: null, 
-    type: "danger" // 'danger' or 'neutral'
+    type: "danger" 
   });
   
   const bottomRef = useRef(null);
-  const chatBackground = "/chat-bg.png"; 
 
   /* JOIN ROOM + LOAD DATA */
   useEffect(() => {
@@ -64,14 +64,11 @@ export default function RoomView() {
   useEffect(() => {
     if (!socket) return;
     
-    // 1. Receive new message
     const msgHandler = (msg) => setMessages(m => [...m, msg]);
-    
-    // 2. Handle Clear Chat Event (syncs across all users)
     const clearHandler = () => setMessages([]); 
 
     socket.on("room_message_receive", msgHandler);
-    socket.on("room_chat_cleared", clearHandler); // Listen for clear event
+    socket.on("room_chat_cleared", clearHandler);
 
     return () => {
       socket.off("room_message_receive", msgHandler);
@@ -107,8 +104,6 @@ export default function RoomView() {
   };
 
   /* --- ACTIONS --- */
-
-  // 1. Prepare Clear Chat
   const requestClearChat = () => {
     setMenuOpen(false);
     setConfirmation({
@@ -120,23 +115,17 @@ export default function RoomView() {
     });
   };
 
-  // 2. Execute Clear Chat
   const executeClearChat = async () => {
     try {
       await API.delete(`/api/rooms/${roomId}/messages`);
-      
-      // Notify socket server to tell everyone to clear screen
       socket.emit("room_clear_chat", { roomId });
-      
-      setMessages([]); // Clear locally immediately
+      setMessages([]);
       setConfirmation({ ...confirmation, isOpen: false });
     } catch (err) {
       console.error(err);
-      // Optional: Show toast error here
     }
   };
 
-  // 3. Prepare Exit Group
   const requestExitGroup = () => {
     setMenuOpen(false);
     setConfirmation({
@@ -148,7 +137,6 @@ export default function RoomView() {
     });
   };
 
-  // 4. Execute Exit Group
   const executeExitGroup = async () => {
     try {
       await API.post(`/api/rooms/${roomId}/leave`);
@@ -229,51 +217,30 @@ export default function RoomView() {
         </div>
         
         <div className="flex items-center gap-1 relative">
-          <button 
-            onClick={() => setShowInfo(true)}
-            className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded-full hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
+          <button onClick={() => setShowInfo(true)} className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded-full hover:bg-gray-50 dark:hover:bg-gray-800">
             <Info size={20} />
           </button>
 
-          {/* MORE VERTICAL DROPDOWN */}
           <div className="relative">
-            <button 
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded-full hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
+            <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded-full hover:bg-gray-50 dark:hover:bg-gray-800">
               <MoreVertical size={20} />
             </button>
-            
-            {/* Dropdown Menu */}
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
                 <div className="absolute right-0 top-12 w-48 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                   <div className="p-1">
-                    <button 
-                      onClick={() => { setShowInfo(true); setMenuOpen(false); }}
-                      className="flex items-center gap-2 w-full p-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-left"
-                    >
+                    <button onClick={() => { setShowInfo(true); setMenuOpen(false); }} className="flex items-center gap-2 w-full p-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-left">
                       <Users size={16} /> Group Info
                     </button>
-                    <button 
-                      onClick={requestClearChat} // Opens custom modal
-                      className="flex items-center gap-2 w-full p-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-left"
-                    >
+                    <button onClick={requestClearChat} className="flex items-center gap-2 w-full p-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-left">
                       <Trash2 size={16} /> Clear Chat
                     </button>
-                    <button 
-                      onClick={requestExitGroup} // Opens custom modal
-                      className="flex items-center gap-2 w-full p-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-left"
-                    >
+                    <button onClick={requestExitGroup} className="flex items-center gap-2 w-full p-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-left">
                       <LogOut size={16} /> Exit Group
                     </button>
                     <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
-                    <button 
-                      onClick={handleCloseChat}
-                      className="flex items-center gap-2 w-full p-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-left"
-                    >
+                    <button onClick={handleCloseChat} className="flex items-center gap-2 w-full p-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-left">
                       <XCircle size={16} /> Close
                     </button>
                   </div>
@@ -286,14 +253,23 @@ export default function RoomView() {
 
       {/* CHAT AREA */}
       <div className="relative flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900">
+        
+        {/* DYNAMIC BACKGROUND */}
         <div 
-          className="absolute inset-0 z-0 opacity-10 dark:opacity-5 pointer-events-none"
+          className={`absolute inset-0 z-0 pointer-events-none transition-all duration-300 
+            ${background ? '' : 'opacity-10 dark:opacity-5'}`} // If custom bg, remove low opacity
           style={{ 
-            backgroundImage: `url('${chatBackground}')`,
-            backgroundRepeat: 'repeat',
-            backgroundSize: '400px'
+            backgroundImage: background ? `url('${background}')` : `url('/chat-bg.png')`,
+            backgroundRepeat: background ? 'no-repeat' : 'repeat',
+            backgroundSize: background ? 'cover' : '400px',
+            backgroundPosition: 'center'
           }}
         />
+        
+        {/* Overlay for custom backgrounds to improve text readability */}
+        {background && (
+          <div className="absolute inset-0 bg-white/40 dark:bg-black/50 z-0 pointer-events-none backdrop-blur-[1px]" />
+        )}
 
         <div className="absolute inset-0 overflow-y-auto custom-scrollbar z-10 px-4 py-6 space-y-6">
           {messages.length === 0 && (
@@ -343,7 +319,6 @@ export default function RoomView() {
                       </div>
                     </div>
 
-                    {/* Reactions Display */}
                     {m.reactions && m.reactions.length > 0 && (
                       <div className={`absolute -bottom-4 ${isMe ? "right-0" : "left-0"} flex items-center gap-1`}>
                         {m.reactions.map((r, idx) => (
@@ -354,7 +329,6 @@ export default function RoomView() {
                       </div>
                     )}
 
-                    {/* REACTION BUTTON */}
                     <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity
                       ${isMe ? "-left-10" : "-right-10"}`}>
                       <ReactionPopup onReact={(emoji) => handleAddReaction(msgId, emoji)} />
@@ -371,9 +345,7 @@ export default function RoomView() {
       {/* INPUT */}
       <ChatInput onSend={sendMessage} />
 
-      {/* --- MODALS --- */}
-
-      {/* 1. CUSTOM CONFIRMATION MODAL */}
+      {/* CONFIRM MODAL & GROUP INFO MODAL (Same as your code) */}
       <ConfirmModal 
         isOpen={confirmation.isOpen}
         onClose={() => setConfirmation({ ...confirmation, isOpen: false })}
@@ -383,12 +355,10 @@ export default function RoomView() {
         type={confirmation.type}
       />
 
-      {/* 2. GROUP INFO MODAL */}
       {showInfo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowInfo(false)} />
           <div className="relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Modal Header */}
             <div className="p-6 bg-teal-500 text-white text-center relative">
               <button onClick={() => setShowInfo(false)} className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition">
                 <X size={18} />
@@ -400,7 +370,6 @@ export default function RoomView() {
               <p className="text-teal-100 text-sm mt-1">{room?.members?.length} Members</p>
             </div>
 
-            {/* Modal Content */}
             <div className="p-6 max-h-[60vh] overflow-y-auto">
               <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Members</h3>
               <div className="space-y-3">
@@ -418,8 +387,7 @@ export default function RoomView() {
               </div>
             </div>
             
-            {/* Modal Footer */}
-            <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex justify-center">
+            <div className="p-4 bg-gray-5 border-t border-gray-100 dark:bg-gray-900 dark:border-gray-800 flex justify-center">
               <button onClick={() => setShowInfo(false)} className="text-sm text-gray-500 hover:text-gray-800 dark:hover:text-white transition">
                 Close
               </button>
@@ -432,53 +400,22 @@ export default function RoomView() {
   );
 }
 
-/* --- SUB-COMPONENTS --- */
-
-// NEW: Custom Confirmation Modal
+// ... Rest of your sub-components (ConfirmModal, ReactionPopup, ChatInput) remain unchanged
 function ConfirmModal({ isOpen, onClose, onConfirm, title, message, type = "neutral" }) {
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
-        onClick={onClose}
-      />
-      
-      {/* Modal Card */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
       <div className="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
         <div className="p-6 flex flex-col items-center text-center">
-          
-          {/* Icon Bubble */}
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 
-            ${type === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-100 text-gray-600'}`}>
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${type === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-100 text-gray-600'}`}>
             <AlertTriangle size={24} />
           </div>
-
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-            {title}
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-            {message}
-          </p>
-
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{message}</p>
           <div className="flex gap-3 w-full">
-            <button
-              onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl font-medium text-gray-700 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              className={`flex-1 py-2.5 rounded-xl font-medium text-white shadow-lg transition-transform active:scale-95
-                ${type === 'danger' 
-                  ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' 
-                  : 'bg-teal-500 hover:bg-teal-600 shadow-teal-500/20'}`}
-            >
-              Confirm
-            </button>
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl font-medium text-gray-700 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+            <button onClick={onConfirm} className={`flex-1 py-2.5 rounded-xl font-medium text-white shadow-lg transition-transform active:scale-95 ${type === 'danger' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : 'bg-teal-500 hover:bg-teal-600 shadow-teal-500/20'}`}>Confirm</button>
           </div>
         </div>
       </div>
@@ -487,22 +424,12 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, type = "neut
 }
 
 function ReactionPopup({ onReact }) {
-  // ... (Same as before)
   return (
     <div className="group/menu relative">
-      <button className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 hover:text-teal-500 shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
-        <Smile size={16} />
-      </button>
-      
+      <button className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 hover:text-teal-500 shadow-sm border border-gray-200 dark:border-gray-700 transition-colors"><Smile size={16} /></button>
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden group-hover/menu:flex bg-white dark:bg-gray-800 shadow-xl rounded-full border border-gray-200 dark:border-gray-700 p-1 gap-1 animate-in zoom-in-95 duration-200 z-30">
         {["👍", "❤️", "😂", "😮", "😢", "🔥"].map((emoji) => (
-          <button 
-            key={emoji}
-            onClick={() => onReact(emoji)}
-            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-lg transition-transform hover:scale-125"
-          >
-            {emoji}
-          </button>
+          <button key={emoji} onClick={() => onReact(emoji)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-lg transition-transform hover:scale-125">{emoji}</button>
         ))}
       </div>
     </div>
@@ -510,7 +437,6 @@ function ReactionPopup({ onReact }) {
 }
 
 function ChatInput({ onSend }) {
-  // ... (Same as before)
   const [text, setText] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const fileInputRef = useRef(null);
@@ -526,7 +452,6 @@ function ChatInput({ onSend }) {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result;
@@ -541,57 +466,25 @@ function ChatInput({ onSend }) {
 
   return (
     <div className="p-4 bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 z-20 relative">
-      
       {showEmoji && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setShowEmoji(false)} />
           <div className="absolute bottom-20 right-4 z-40 shadow-2xl rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800">
-            <EmojiPicker 
-              onEmojiClick={(e) => setText(prev => prev + e.emoji)}
-              theme="auto"
-              width={320}
-              height={400}
-            />
+            <EmojiPicker onEmojiClick={(e) => setText(prev => prev + e.emoji)} theme="auto" width={320} height={400} />
           </div>
         </>
       )}
-
-      <form
-        onSubmit={submit}
-        className="flex items-center gap-2 bg-gray-100 dark:bg-gray-900 p-2 rounded-2xl transition-colors focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:bg-white dark:focus-within:bg-gray-800 border border-transparent focus-within:border-teal-100 dark:focus-within:border-gray-700"
-      >
+      <form onSubmit={submit} className="flex items-center gap-2 bg-gray-100 dark:bg-gray-900 p-2 rounded-2xl transition-colors focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:bg-white dark:focus-within:bg-gray-800 border border-transparent focus-within:border-teal-100 dark:focus-within:border-gray-700">
         <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} />
-
-        <button 
-          type="button" 
-          onClick={() => fileInputRef.current.click()}
-          className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-        >
+        <button type="button" onClick={() => fileInputRef.current.click()} className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
           <Paperclip size={20} />
         </button>
-
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 bg-transparent px-2 py-2 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none text-sm"
-        />
-
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a message..." className="flex-1 bg-transparent px-2 py-2 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none text-sm" />
         <div className="flex items-center gap-1">
-          <button 
-            type="button" 
-            onClick={() => setShowEmoji(!showEmoji)}
-            className={`p-2 transition-colors rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 
-              ${showEmoji ? "text-teal-500 bg-gray-200 dark:bg-gray-800" : "text-gray-400 hover:text-teal-600 dark:hover:text-teal-400"}`}
-          >
+          <button type="button" onClick={() => setShowEmoji(!showEmoji)} className={`p-2 transition-colors rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 ${showEmoji ? "text-teal-500 bg-gray-200 dark:bg-gray-800" : "text-gray-400 hover:text-teal-600 dark:hover:text-teal-400"}`}>
             <Smile size={20} />
           </button>
-
-          <button 
-            type="submit"
-            disabled={!text.trim()}
-            className="p-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-md shadow-teal-500/20 transition-all disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95"
-          >
+          <button type="submit" disabled={!text.trim()} className="p-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-md shadow-teal-500/20 transition-all disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95">
             <Send size={18} className={text.trim() ? "ml-0.5" : ""} />
           </button>
         </div>

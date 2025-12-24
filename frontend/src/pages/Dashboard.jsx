@@ -3,6 +3,7 @@ import { Link, Routes, Route } from "react-router-dom";
 import CreateRoomDialog from "../components/CreateRoomDialog";
 import NewDMDialog from "../components/NewDMDialog";
 import EditProfileDialog from "../components/EditProfileDialog";
+import ChangeBackgroundDialog from "../components/ChangeBackgroundDialog"; 
 
 import {
   Plus,
@@ -10,7 +11,11 @@ import {
   Settings,
   MessageCircle,
   Search,
-  User
+  User,
+  MoreVertical,      // Menu Icon
+  Image as ImageIcon, // Background Icon
+  PlusCircle,
+  MessageSquarePlus
 } from "lucide-react";
 import RoomView from "./RoomView";
 import DMView from "./DMView";
@@ -18,7 +23,7 @@ import { useAuth } from "../contexts/AuthContext";
 import API from "../api/api";
 
 export default function Dashboard() {
-  const { user, logout, login } = useAuth(); // Added login for profile update
+  const { user, logout, login } = useAuth();
   const [rooms, setRooms] = useState([]);
   
   // Search State
@@ -28,9 +33,23 @@ export default function Dashboard() {
   const [openCreate, setOpenCreate] = useState(false);
   const [openNewDM, setOpenNewDM] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
+  const [openBackground, setOpenBackground] = useState(false); // Background Dialog
 
   const [activeTab, setActiveTab] = useState("rooms");
+  const [showProfileMenu, setShowProfileMenu] = useState(false); // Menu Toggle
   const [dms, setDms] = useState([]);
+
+  // --- BACKGROUND STATE ---
+  const [currentBg, setCurrentBg] = useState(() => {
+    return localStorage.getItem("chat_background") || "";
+  });
+
+  const handleApplyBackground = (bgUrl) => {
+    setCurrentBg(bgUrl);
+    localStorage.setItem("chat_background", bgUrl);
+    setOpenBackground(false); 
+  };
+  // ------------------------
 
   useEffect(() => {
     if (activeTab === "dms") {
@@ -53,7 +72,6 @@ export default function Dashboard() {
   const handleUpdateProfile = async (updatedData) => {
     try {
       const { data: updatedUser } = await API.put("/api/users/profile", updatedData);
-      // Update local context instantly
       const token = localStorage.getItem("token"); 
       login({ token, user: updatedUser });
       return true;
@@ -90,39 +108,98 @@ export default function Dashboard() {
     setSearchQuery("");
   };
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowProfileMenu(false);
+    if(showProfileMenu) window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, [showProfileMenu]);
+
   return (
     <div className="h-screen flex overflow-hidden font-sans transition-colors duration-500
       bg-linear-to-br from-teal-50 via-white to-teal-100 
       dark:from-gray-950 dark:via-[#051e24] dark:to-gray-950">
 
-      {/* SIDEBAR */}
-      <aside className="w-80 flex flex-col p-4 shadow-sm z-10 border-r transition-all duration-300
+      {/* SIDEBAR (Width increased from w-80 to w-96) */}
+      <aside className="w-96 flex flex-col p-4 shadow-sm z-10 border-r transition-all duration-300
         bg-white/80 backdrop-blur-xl border-teal-100 
         dark:bg-gray-900/80 dark:border-gray-800">
 
-        {/* USER PROFILE CARD */}
-        <div className="flex items-center gap-4 p-4 mb-6 rounded-2xl border transition-colors
+        {/* USER PROFILE CARD WITH MENU */}
+        <div 
+          className="relative flex items-center gap-3 p-3 mb-6 rounded-2xl border transition-colors
           bg-teal-50/50 border-teal-100/50 
-          dark:bg-teal-900/10 dark:border-teal-500/10">
-          
-          <div className="relative">
-            <div onClick={() => setOpenProfile(true)} className="w-12 h-12 rounded-full bg-teal-500 text-white flex items-center justify-center text-lg font-bold shadow-md shadow-teal-200 dark:shadow-teal-900/20">
-              {user?.username?.[0]?.toUpperCase()}
+          dark:bg-teal-900/10 dark:border-teal-500/10"
+          onClick={(e) => e.stopPropagation()} 
+        >
+          {/* Avatar & Info (Clickable for Profile) */}
+          <div className="flex-1 flex items-center gap-3 cursor-pointer group" onClick={() => setOpenProfile(true)}>
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full bg-teal-500 text-white flex items-center justify-center text-lg font-bold shadow-md shadow-teal-200 dark:shadow-teal-900/20 transition-transform group-hover:scale-105">
+                {user?.username?.[0]?.toUpperCase()}
+              </div>
+              <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 border-[2.5px] rounded-full
+                border-white dark:border-gray-900"></span>
             </div>
-            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 border-[2.5px] rounded-full
-              border-white dark:border-gray-900"></span>
+            
+            <div className="overflow-hidden">
+              <h3 className="font-bold truncate transition-colors text-gray-800 dark:text-gray-100">
+                {user?.displayName || user?.username}
+              </h3>
+              <p className="text-xs font-medium truncate transition-colors text-teal-600 dark:text-teal-400">
+                @{user?.username}
+              </p>
+            </div>
           </div>
-          
-          <div className="overflow-hidden">
-            <h3 className="font-bold truncate transition-colors
-              text-gray-800 dark:text-gray-100">
-              {user?.displayName || user?.username}
-            </h3>
-            <p className="text-xs font-medium truncate transition-colors
-              text-teal-600 dark:text-teal-400">
-              @{user?.username}
-            </p>
-          </div>
+
+          {/* MENU TRIGGER */}
+          <button 
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-100/50 dark:hover:bg-teal-900/30 transition-all"
+          >
+            <MoreVertical size={20} />
+          </button>
+
+          {/* DROPDOWN MENU */}
+          {showProfileMenu && (
+            <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+              <div className="p-1.5 space-y-0.5">
+                <button 
+                  onClick={() => { setOpenCreate(true); setShowProfileMenu(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-teal-50 hover:text-teal-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  <PlusCircle size={16} /> Create Room
+                </button>
+                <button 
+                  onClick={() => { setOpenNewDM(true); setShowProfileMenu(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-teal-50 hover:text-teal-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  <MessageSquarePlus size={16} /> New DM
+                </button>
+                <button 
+                  onClick={() => { setOpenBackground(true); setShowProfileMenu(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-teal-50 hover:text-teal-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  <ImageIcon size={16} /> Change Background
+                </button>
+                <button 
+                  onClick={() => { setOpenProfile(true); setShowProfileMenu(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-teal-50 hover:text-teal-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  <Settings size={16} /> Settings
+                </button>
+                
+                <div className="h-px bg-gray-100 dark:bg-gray-700 my-1 mx-2" />
+                
+                <button 
+                  onClick={logout}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                >
+                  <LogOut size={16} /> Sign Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* TABS */}
@@ -150,7 +227,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* SEARCH BAR (Functional) */}
+        {/* SEARCH BAR */}
         <div className="relative mb-4">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 
             text-gray-400 dark:text-gray-500" />
@@ -190,7 +267,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* LIST AREA (Using Filtered Lists) */}
+        {/* LIST AREA */}
         <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
           
           {/* ROOMS LIST */}
@@ -327,8 +404,9 @@ export default function Dashboard() {
               </div>
             }
           />
-          <Route path="rooms/:roomId" element={<RoomView />} />
-          <Route path="dms/:dmId" element={<DMView />} />
+          {/* PASS THE BACKGROUND PROP */}
+          <Route path="rooms/:roomId" element={<RoomView background={currentBg} />} />
+          <Route path="dms/:dmId" element={<DMView background={currentBg} />} />
         </Routes>
       </main>
 
@@ -347,6 +425,12 @@ export default function Dashboard() {
         onClose={() => setOpenProfile(false)}
         user={user}
         onUpdate={handleUpdateProfile}
+      />
+      <ChangeBackgroundDialog
+        open={openBackground}
+        onClose={() => setOpenBackground(false)}
+        currentBg={currentBg}
+        onApply={handleApplyBackground}
       />
 
     </div>
