@@ -8,7 +8,13 @@ import {
   MoreVertical, 
   ArrowLeft, 
   FileText, 
-  Music
+  Music,
+  Trash2, 
+  LogOut, 
+  XCircle, 
+  Users, 
+  X,
+  AlertTriangle // Added for the confirmation modal
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react"; 
 import { useSocket } from "../contexts/SocketContext";
@@ -20,11 +26,24 @@ export default function RoomView() {
   const { socket } = useSocket();
   const { user } = useAuth();
   const navigate = useNavigate();
+  
   const [messages, setMessages] = useState([]);
   const [room, setRoom] = useState(null);
+  
+  // UI States
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  
+  // Confirmation Modal State
+  const [confirmation, setConfirmation] = useState({ 
+    isOpen: false, 
+    title: "", 
+    message: "", 
+    action: null, 
+    type: "danger" // 'danger' or 'neutral'
+  });
+  
   const bottomRef = useRef(null);
-
-  // Points to your local image in the public folder
   const chatBackground = "/chat-bg.png"; 
 
   /* JOIN ROOM + LOAD DATA */
@@ -41,12 +60,23 @@ export default function RoomView() {
     return () => socket.emit("leave_room", { roomId });
   }, [socket, roomId]);
 
-  /* SOCKET RECEIVE */
+  /* SOCKET LISTENERS */
   useEffect(() => {
     if (!socket) return;
-    const handler = (msg) => setMessages(m => [...m, msg]);
-    socket.on("room_message_receive", handler);
-    return () => socket.off("room_message_receive", handler);
+    
+    // 1. Receive new message
+    const msgHandler = (msg) => setMessages(m => [...m, msg]);
+    
+    // 2. Handle Clear Chat Event (syncs across all users)
+    const clearHandler = () => setMessages([]); 
+
+    socket.on("room_message_receive", msgHandler);
+    socket.on("room_chat_cleared", clearHandler); // Listen for clear event
+
+    return () => {
+      socket.off("room_message_receive", msgHandler);
+      socket.off("room_chat_cleared", clearHandler);
+    };
   }, [socket]);
 
   useEffect(() => {
@@ -74,6 +104,62 @@ export default function RoomView() {
       }
       return msg;
     }));
+  };
+
+  /* --- ACTIONS --- */
+
+  // 1. Prepare Clear Chat
+  const requestClearChat = () => {
+    setMenuOpen(false);
+    setConfirmation({
+      isOpen: true,
+      title: "Clear Chat History",
+      message: "Are you sure you want to delete all messages in this group? This action cannot be undone.",
+      type: "danger",
+      action: executeClearChat
+    });
+  };
+
+  // 2. Execute Clear Chat
+  const executeClearChat = async () => {
+    try {
+      await API.delete(`/api/rooms/${roomId}/messages`);
+      
+      // Notify socket server to tell everyone to clear screen
+      socket.emit("room_clear_chat", { roomId });
+      
+      setMessages([]); // Clear locally immediately
+      setConfirmation({ ...confirmation, isOpen: false });
+    } catch (err) {
+      console.error(err);
+      // Optional: Show toast error here
+    }
+  };
+
+  // 3. Prepare Exit Group
+  const requestExitGroup = () => {
+    setMenuOpen(false);
+    setConfirmation({
+      isOpen: true,
+      title: "Leave Group",
+      message: "Are you sure you want to leave this group? You won't be able to see messages unless you rejoin.",
+      type: "danger",
+      action: executeExitGroup
+    });
+  };
+
+  // 4. Execute Exit Group
+  const executeExitGroup = async () => {
+    try {
+      await API.post(`/api/rooms/${roomId}/leave`);
+      navigate("/app");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCloseChat = () => {
+    navigate("/app");
   };
 
   /* HELPER: Render Message Content */
@@ -132,7 +218,7 @@ export default function RoomView() {
           <div className="w-10 h-10 rounded-xl bg-linear-to-br from-teal-400 to-teal-600 text-white flex items-center justify-center font-bold shadow-md shadow-teal-500/20">
             {room?.name?.[0]?.toUpperCase()}
           </div>
-          <div>
+          <div onClick={() => setShowInfo(true)} className="cursor-pointer hover:opacity-80 transition">
             <h2 className="font-bold text-gray-800 dark:text-white leading-tight">
               {room?.name || "Loading..."}
             </h2>
@@ -142,32 +228,74 @@ export default function RoomView() {
           </div>
         </div>
         
-        <div className="flex items-center gap-1">
-          <button className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded-full hover:bg-gray-50 dark:hover:bg-gray-800">
+        <div className="flex items-center gap-1 relative">
+          <button 
+            onClick={() => setShowInfo(true)}
+            className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded-full hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
             <Info size={20} />
           </button>
-          <button className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded-full hover:bg-gray-50 dark:hover:bg-gray-800">
-            <MoreVertical size={20} />
-          </button>
+
+          {/* MORE VERTICAL DROPDOWN */}
+          <div className="relative">
+            <button 
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-2 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors rounded-full hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <MoreVertical size={20} />
+            </button>
+            
+            {/* Dropdown Menu */}
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 top-12 w-48 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                  <div className="p-1">
+                    <button 
+                      onClick={() => { setShowInfo(true); setMenuOpen(false); }}
+                      className="flex items-center gap-2 w-full p-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-left"
+                    >
+                      <Users size={16} /> Group Info
+                    </button>
+                    <button 
+                      onClick={requestClearChat} // Opens custom modal
+                      className="flex items-center gap-2 w-full p-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-left"
+                    >
+                      <Trash2 size={16} /> Clear Chat
+                    </button>
+                    <button 
+                      onClick={requestExitGroup} // Opens custom modal
+                      className="flex items-center gap-2 w-full p-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-left"
+                    >
+                      <LogOut size={16} /> Exit Group
+                    </button>
+                    <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
+                    <button 
+                      onClick={handleCloseChat}
+                      className="flex items-center gap-2 w-full p-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-left"
+                    >
+                      <XCircle size={16} /> Close
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* CHAT AREA CONTAINER (Fixed BG + Scrolling Content) */}
+      {/* CHAT AREA */}
       <div className="relative flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900">
-        
-        {/* 1. FIXED BACKGROUND LAYER (Stationary Wallpaper) */}
         <div 
           className="absolute inset-0 z-0 opacity-10 dark:opacity-5 pointer-events-none"
           style={{ 
             backgroundImage: `url('${chatBackground}')`,
             backgroundRepeat: 'repeat',
-            backgroundSize: '400px' // Adjust scale as needed
+            backgroundSize: '400px'
           }}
         />
 
-        {/* 2. SCROLLABLE MESSAGES LAYER */}
         <div className="absolute inset-0 overflow-y-auto custom-scrollbar z-10 px-4 py-6 space-y-6">
-          
           {messages.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-0 animate-fade-in" style={{animationFillMode: 'forwards'}}>
               <div className="w-20 h-20 bg-teal-50 dark:bg-teal-900/20 rounded-full flex items-center justify-center mb-4">
@@ -184,10 +312,7 @@ export default function RoomView() {
             const msgId = m._id || m.createdAt;
 
             return (
-              <div
-                key={i}
-                className={`group flex w-full ${isMe ? "justify-end" : "justify-start"}`}
-              >
+              <div key={i} className={`group flex w-full ${isMe ? "justify-end" : "justify-start"}`}>
                 <div className={`flex max-w-[85%] md:max-w-[70%] gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
                   
                   {!isMe && (
@@ -201,21 +326,17 @@ export default function RoomView() {
                   )}
 
                   <div className="relative">
-                    <div
-                      className={`px-4 py-3 shadow-sm relative text-[15px] leading-relaxed break-words
-                        ${isMe 
-                          ? "bg-teal-500 text-white rounded-2xl rounded-br-none" 
-                          : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-2xl rounded-bl-none border border-gray-100 dark:border-gray-700"
-                        }`}
-                    >
+                    <div className={`px-4 py-3 shadow-sm relative text-[15px] leading-relaxed break-words
+                      ${isMe 
+                        ? "bg-teal-500 text-white rounded-2xl rounded-br-none" 
+                        : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-2xl rounded-bl-none border border-gray-100 dark:border-gray-700"
+                      }`}>
                       {!isMe && showAvatar && (
                         <p className="text-[11px] font-bold text-teal-600 dark:text-teal-400 mb-1 opacity-90">
                           {m.senderId?.username}
                         </p>
                       )}
-                      
                       {renderMessageContent(m)}
-
                       <div className={`text-[10px] mt-1 flex items-center gap-1 justify-end opacity-80
                         ${isMe ? "text-white" : "text-gray-400"}`}>
                         {new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -233,12 +354,11 @@ export default function RoomView() {
                       </div>
                     )}
 
-                    {/* REACTION BUTTON (Visible on Hover) */}
+                    {/* REACTION BUTTON */}
                     <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity
                       ${isMe ? "-left-10" : "-right-10"}`}>
                       <ReactionPopup onReact={(emoji) => handleAddReaction(msgId, emoji)} />
                     </div>
-
                   </div>
                 </div>
               </div>
@@ -250,13 +370,124 @@ export default function RoomView() {
 
       {/* INPUT */}
       <ChatInput onSend={sendMessage} />
+
+      {/* --- MODALS --- */}
+
+      {/* 1. CUSTOM CONFIRMATION MODAL */}
+      <ConfirmModal 
+        isOpen={confirmation.isOpen}
+        onClose={() => setConfirmation({ ...confirmation, isOpen: false })}
+        onConfirm={confirmation.action}
+        title={confirmation.title}
+        message={confirmation.message}
+        type={confirmation.type}
+      />
+
+      {/* 2. GROUP INFO MODAL */}
+      {showInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowInfo(false)} />
+          <div className="relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-6 bg-teal-500 text-white text-center relative">
+              <button onClick={() => setShowInfo(false)} className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition">
+                <X size={18} />
+              </button>
+              <div className="w-20 h-20 mx-auto bg-white text-teal-600 rounded-full flex items-center justify-center text-3xl font-bold shadow-lg mb-3">
+                {room?.name?.[0]?.toUpperCase()}
+              </div>
+              <h2 className="text-xl font-bold">{room?.name}</h2>
+              <p className="text-teal-100 text-sm mt-1">{room?.members?.length} Members</p>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Members</h3>
+              <div className="space-y-3">
+                {room?.members?.map((member) => (
+                  <div key={member._id} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center text-teal-700 dark:text-teal-300 font-bold">
+                      {member.username?.[0]?.toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800 dark:text-white">{member.username}</p>
+                      <p className="text-xs text-gray-500">{member._id === user.id ? "You" : "Member"}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex justify-center">
+              <button onClick={() => setShowInfo(false)} className="text-sm text-gray-500 hover:text-gray-800 dark:hover:text-white transition">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
 /* --- SUB-COMPONENTS --- */
 
+// NEW: Custom Confirmation Modal
+function ConfirmModal({ isOpen, onClose, onConfirm, title, message, type = "neutral" }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
+        onClick={onClose}
+      />
+      
+      {/* Modal Card */}
+      <div className="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
+        <div className="p-6 flex flex-col items-center text-center">
+          
+          {/* Icon Bubble */}
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 
+            ${type === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-100 text-gray-600'}`}>
+            <AlertTriangle size={24} />
+          </div>
+
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+            {title}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            {message}
+          </p>
+
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl font-medium text-gray-700 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className={`flex-1 py-2.5 rounded-xl font-medium text-white shadow-lg transition-transform active:scale-95
+                ${type === 'danger' 
+                  ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' 
+                  : 'bg-teal-500 hover:bg-teal-600 shadow-teal-500/20'}`}
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ReactionPopup({ onReact }) {
+  // ... (Same as before)
   return (
     <div className="group/menu relative">
       <button className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 hover:text-teal-500 shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
@@ -279,6 +510,7 @@ function ReactionPopup({ onReact }) {
 }
 
 function ChatInput({ onSend }) {
+  // ... (Same as before)
   const [text, setText] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const fileInputRef = useRef(null);

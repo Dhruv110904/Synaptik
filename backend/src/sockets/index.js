@@ -69,6 +69,13 @@ module.exports = (io) => {
     socket.on('typing_stop', ({ roomId, user }) => {
       socket.to(`room_${roomId}`).emit('typing_stop', { user });
     });
+    socket.on("room_clear_chat", ({ roomId }) => {
+      // 1. Notify everyone in the "room_..." channel
+      io.to(`room_${roomId}`).emit("room_chat_cleared");
+    });
+    socket.on("dm_clear_chat", ({ dmId }) => {
+      io.to(`dm_${dmId}`).emit("dm_chat_cleared");
+    });
 
     socket.on('disconnect', () => {
       if (userId) {

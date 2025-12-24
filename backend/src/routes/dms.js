@@ -51,4 +51,19 @@ router.get("/:id/messages", auth, async (req, res) => {
   res.json(messages);
 });
 
+router.delete('/:id/messages', auth, async (req, res) => {
+  try {
+    const dmId = req.params.id;
+    
+    // Delete all messages matching this dmId
+    // Note: We use 'dmId' here, not 'roomId'
+    await Message.deleteMany({ dmId: dmId });
+
+    res.json({ success: true, message: 'Chat cleared' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 module.exports = router;

@@ -115,7 +115,27 @@ router.get('/:id/messages', auth, async (req, res) => {
   res.json(messages.reverse());
 });
 
+/**
+ * DELETE /api/rooms/:id/messages
+ * Clear all messages in a room
+ */
+router.delete('/:id/messages', auth, async (req, res) => {
+  try {
+    const roomId = req.params.id;
+    
+    // Optional: Check if the user is an admin/owner before allowing this
+    // const room = await Room.findById(roomId);
+    // if (room.owner.toString() !== req.user._id.toString()) ...
 
+    // Delete all messages matching this roomId
+    await Message.deleteMany({ roomId: roomId });
+
+    res.json({ success: true, message: 'Chat cleared' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
 /**
  * GET /api/rooms/:id
  * Get room info
