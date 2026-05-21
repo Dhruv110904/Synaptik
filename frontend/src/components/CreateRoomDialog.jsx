@@ -44,8 +44,8 @@ export default function CreateRoomDialog({ open, onClose, onCreate }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       {/* Card Container */}
-      <div className="w-full max-w-[500px] p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 transition-colors
-        bg-white rounded-[2rem] 
+      <div className="w-full max-w-125 p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 transition-colors
+        bg-white rounded-4xl 
         dark:bg-gray-900 dark:border dark:border-gray-800">
         
         {/* CLOSE BUTTON */}
@@ -140,7 +140,7 @@ export default function CreateRoomDialog({ open, onClose, onCreate }) {
                 checked={isPrivate}
                 onChange={(e) => setIsPrivate(e.target.checked)}
               />
-              <div className="w-12 h-7 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all duration-300
+              <div className="w-12 h-7 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all duration-300
                 bg-gray-200 after:border-gray-300 peer-checked:bg-teal-400 peer-checked:after:border-white
                 dark:bg-gray-700 dark:after:border-gray-600 dark:peer-checked:bg-teal-500"></div>
             </label>

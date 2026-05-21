@@ -385,7 +385,7 @@ export default function Dashboard() {
             path="/"
             element={
               <div className="h-full flex items-center justify-center p-6">
-                <div className="rounded-[2rem] p-12 md:p-16 text-center shadow-xl max-w-lg w-full transform transition-all hover:scale-[1.01] border
+                <div className="rounded-4xl p-12 md:p-16 text-center shadow-xl max-w-lg w-full transform transition-all hover:scale-[1.01] border
                   bg-white shadow-teal-900/5 border-transparent
                   dark:bg-gray-900/80 dark:backdrop-blur-md dark:shadow-teal-900/20 dark:border-gray-800">
                   <div className="w-20 h-20 mx-auto mb-8 rounded-3xl bg-teal-500 flex items-center justify-center text-white shadow-lg shadow-teal-500/30">

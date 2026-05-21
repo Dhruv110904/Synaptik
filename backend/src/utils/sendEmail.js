@@ -1,28 +1,26 @@
-const sgMail = require("@sendgrid/mail");
+const Brevo = require("@getbrevo/brevo");
 
-// Set the API Key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const client = new Brevo.BrevoClient({
+  apiKey: process.env.BREVO_API_KEY,
+});
 
 module.exports = async ({ to, subject, html }) => {
-  const msg = {
-    to,
-    from: `"Synaptik" <${process.env.EMAIL_USER}>`, // Must match your Verified Sender in SendGrid
-    subject,
-    html,
-    // Optional: Add a text version for clients that don't view HTML
-    // text: html.replace(/<[^>]*>?/gm, ''), 
-  };
-
   try {
-    await sgMail.send(msg);
-    console.log("✅ Email sent to", to);
-  } catch (error) {
-    console.error("❌ Email error:", error);
+    const response = await client.transactionalEmails.sendTransacEmail({
+      sender: {
+        name: "Synaptik",
+        email: process.env.EMAIL_USER,
+      },
 
-    // SendGrid errors often contain more details in the response body
-    if (error.response) {
-      console.error("SendGrid Error Body:", error.response.body);
-    }
-    throw error;
+      to: [{ email: to }],
+
+      subject,
+
+      htmlContent: html,
+    });
+
+    console.log("✅ Email sent:", response);
+  } catch (error) {
+    console.error("❌ Brevo Error:", error);
   }
 };

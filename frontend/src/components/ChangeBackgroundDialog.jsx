@@ -80,7 +80,7 @@ export default function ChangeBackgroundDialog({ open, onClose, onApply, current
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
                 
                 {/* Label */}
-                <div className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                <div className="absolute bottom-0 inset-x-0 p-2 bg-linear-to-t from-black/80 to-transparent">
                   <span className="text-xs font-medium text-white pl-1">{bg.name}</span>
                 </div>
 
